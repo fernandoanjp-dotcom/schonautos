@@ -1,0 +1,35 @@
+
+'use strict';
+(()=>{
+ const nav=document.querySelector('.main-nav');
+ const toggle=document.querySelector('.menu-toggle');
+ const closeMenu=()=>{nav.classList.remove('open');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Abrir menú');};
+ toggle.addEventListener('click',()=>{const opened=nav.classList.toggle('open');toggle.setAttribute('aria-expanded',String(opened));toggle.setAttribute('aria-label',opened?'Cerrar menú':'Abrir menú');});
+ nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
+ document.addEventListener('click',e=>{if(!document.querySelector('.site-header').contains(e.target))closeMenu();});
+ const parts={Automóviles:['Asientos','Techo','Volante','Puertas','Alfombrillas / moqueta','Interior completo'],Motos:['Asiento'],Náutica:['Asientos','Bancos','Colchonetas','Sofás','Moquetas','Techo','Capota'],'Capotas y techos':['Capota eléctrica','Techo eléctrico','Cortinilla','Cristal panorámico'],Clásicos:['Asientos','Techo','Volante','Alfombrillas','Interior completo'],'Vehículos especiales':['Asientos','Techo','Interior completo']};
+ const service=document.getElementById('service'),piece=document.getElementById('piece');
+ const updatePieces=()=>{const old=piece.value;const opts=['',...(parts[service.value]||['Asientos','Techo','Volante','Puertas','Capota','Alfombrillas / moqueta','Interior completo']),'Otra / necesito asesoramiento'];piece.replaceChildren(...opts.map(v=>new Option(v||'Selecciona la pieza',v)));if(opts.includes(old))piece.value=old;};
+ service.addEventListener('change',updatePieces);
+ document.querySelectorAll('[data-service]').forEach(a=>a.addEventListener('click',()=>{service.value=a.dataset.service;updatePieces();}));
+ const messageDialog=document.getElementById('message-dialog');
+ const messageText=document.getElementById('message-text');
+ const confirmContact=document.getElementById('confirm-contact');
+ const wa=document.getElementById('whatsapp-link');
+ let message='';
+ const setContact=()=>{const yes=confirmContact.checked;wa.setAttribute('aria-disabled',String(!yes));wa.tabIndex=yes?0:-1;if(yes)wa.href='https://wa.me/34658445225?text='+encodeURIComponent(message);else wa.removeAttribute('href');};
+ confirmContact.addEventListener('change',setContact);
+ wa.addEventListener('click',e=>{if(!confirmContact.checked)e.preventDefault();});
+ const showModal=dialog=>{dialog.showModal();document.body.style.overflow='hidden';};
+ document.querySelectorAll('dialog').forEach(dialog=>{dialog.addEventListener('close',()=>{document.body.style.overflow='';});dialog.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>dialog.close()));dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});});
+ document.getElementById('quote-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!form.reportValidity())return;const value=id=>document.getElementById(id).value.trim();message=['Hola, quisiera consultar un trabajo de tapicería.','','Servicio: '+value('service'),'Pieza o zona: '+value('piece'),'Marca y modelo: '+(value('model')||'Por concretar'),'Material: '+value('material'),'Detalles: '+(value('description')||'Por concretar'),'','¿Podrían indicarme cómo valorar el trabajo y su disponibilidad?','','Consulta preparada desde una demostración web. No es una reserva.'].join('\n');messageText.textContent=message;confirmContact.checked=false;setContact();document.getElementById('copy-status').textContent='';showModal(messageDialog);});
+ document.getElementById('copy-message').addEventListener('click',async()=>{const status=document.getElementById('copy-status');try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(message);}else{const el=document.createElement('textarea');el.value=message;el.style.position='fixed';el.style.opacity='0';messageDialog.append(el);el.select();const ok=document.execCommand('copy');el.remove();if(!ok)throw new Error('clipboard unavailable');}status.textContent='Consulta copiada. Nada se ha enviado.';}catch(e){const range=document.createRange();range.selectNodeContents(messageText);window.getSelection().removeAllRanges();window.getSelection().addRange(range);status.textContent='No se pudo copiar automáticamente. El texto está seleccionado para copiarlo manualmente.';}});
+ const photos=[{src:document.querySelector('[data-photo="0"] img').src,alt:'Asiento rojizo fotografiado en el taller',text:'01 — Tapicería de asiento. Fotografía publicada por Schön Autos. No se han confirmado material, vehículo o fecha del trabajo.',original:'https://www.schonautos.es/media/images/1668075763257.jpeg'},{src:document.querySelector('[data-photo="1"] img').src,alt:'Guarnecido de techo delante del rótulo de Schön Autos',text:'02 — Guarnecido de techo. Fotografía publicada por Schön Autos. No se presenta como una comparación antes/después.',original:'https://www.schonautos.es/media/images/1668076057651.jpg'}];
+ let photoIndex=0;const photoDialog=document.getElementById('photo-dialog');
+ const drawPhoto=()=>{const p=photos[photoIndex];const im=document.getElementById('large-photo');im.src=p.src;im.alt=p.alt;document.getElementById('photo-description').textContent=p.text;document.getElementById('original-photo').href=p.original;};
+ const movePhoto=dir=>{photoIndex=(photoIndex+dir+photos.length)%photos.length;drawPhoto();};
+ document.querySelectorAll('[data-photo]').forEach(b=>b.addEventListener('click',()=>{photoIndex=Number(b.dataset.photo);drawPhoto();showModal(photoDialog);}));
+ document.querySelector('.photo-prev').addEventListener('click',()=>movePhoto(-1));document.querySelector('.photo-next').addEventListener('click',()=>movePhoto(1));photoDialog.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){e.preventDefault();movePhoto(1);}if(e.key==='ArrowLeft'){e.preventDefault();movePhoto(-1);}});
+ document.querySelectorAll('.service-row').forEach(d=>d.addEventListener('toggle',()=>{if(d.open)document.querySelectorAll('.service-row').forEach(other=>{if(other!==d)other.open=false;});}));
+})();

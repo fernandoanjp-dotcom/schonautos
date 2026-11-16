@@ -1,0 +1,46 @@
+name: Package Schon Autos demo
+
+on:
+  push:
+    branches: [demo/schon-autos-20261106]
+    paths: [.github/workflows/schon-autos-package.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: package-schon-autos
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: demo/schon-autos-20261106
+          fetch-depth: 1
+      - name: Verify and unpack the approved demos
+        run: python3 demos/schon-autos/build.py
+      - name: Save only prebuilt demo files on the isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/demo/schon-autos-20261106'
+          test ! -e dist/schon-autos
+          mkdir -p dist/schon-autos
+          cp -R demos/schon-autos/public/. dist/schon-autos/
+          git add --force dist/schon-autos
+          python3 - <<'PY'
+          import subprocess
+          paths = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
+          expected = {'dist/schon-autos/index.html','dist/schon-autos/editorial/index.html','dist/schon-autos/ia/index.html','dist/schon-autos/robots.txt'}
+          if paths != expected:
+              raise SystemExit('Unexpected staged files: ' + repr(paths))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'build(demo): guardar HTML Schon Autos comprobado [skip ci]'
+          git push origin HEAD:refs/heads/demo/schon-autos-20261106
+          git ls-tree -r HEAD dist/schon-autos
